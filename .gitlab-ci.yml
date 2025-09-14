@@ -1,0 +1,30 @@
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  IMAGE: $CI_REGISTRY_IMAGE:latest
+
+test_job:
+  stage: test
+  image: python:3.11
+  script:
+    - pip install -r requirements.txt
+    - python manage.py check
+
+build_job:
+  stage: build
+  image: docker:20
+  services:
+    - docker:20-dind
+  script:
+    - docker build -t $IMAGE .
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push $IMAGE
+
+deploy_job:
+  stage: deploy
+  script:
+    - docker run -d -p 8000:8000 $IMAGE
+  when: manual
